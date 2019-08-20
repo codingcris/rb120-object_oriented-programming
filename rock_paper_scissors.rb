@@ -126,8 +126,9 @@ class Computer < Player
     end
   end
 
-  # called if a move results in a win, will increase the probability of that move
-  # being chosen by the computer again
+  # called if a move results in a win, will increase the probability of that
+  # move being chosen by the computer again
+
   def increase_probability(winning_move)
     move_probabilities.each do |move_choice, move_probability|
       if move_choice != winning_move && move_probability >= 5
@@ -137,8 +138,9 @@ class Computer < Player
     end
   end
 
-  # called if a move results in a loss, will decrease the probability of that move
-  # being chosen by the computer again
+  # called if a move results in a loss, will decrease the probability of that
+  # move being chosen by the computer again
+
   def decrease_probability(losing_move)
     move_probabilities.each do |move_choice, move_probability|
       break if move_probabilities[losing_move] == 0
