@@ -1,5 +1,5 @@
 require 'pry'
-
+PROBABILITY_CHANGE = 5
 class Player
   attr_accessor :move, :name, :score
   attr_reader :move_history
@@ -124,6 +124,7 @@ class Computer < Player
     when :loss
       decrease_probability(last_move)
     end
+    p move_probabilities
   end
 
   # called if a move results in a win, will increase the probability of that
@@ -131,9 +132,9 @@ class Computer < Player
 
   def increase_probability(winning_move)
     move_probabilities.each do |move_choice, move_probability|
-      if move_choice != winning_move && move_probability >= 5
-        move_probabilities[winning_move] += 5
-        move_probabilities[move_choice] -= 5
+      if move_choice != winning_move && move_probability >= PROBABILITY_CHANGE
+        move_probabilities[winning_move] += PROBABILITY_CHANGE
+        move_probabilities[move_choice] -= PROBABILITY_CHANGE
       end
     end
   end
@@ -145,8 +146,8 @@ class Computer < Player
     move_probabilities.each do |move_choice, move_probability|
       break if move_probabilities[losing_move] == 0
       if move_choice != losing_move && move_probability <= 95
-        move_probabilities[losing_move] -= 5
-        move_probabilities[move_choice] += 5
+        move_probabilities[losing_move] -= PROBABILITY_CHANGE
+        move_probabilities[move_choice] += PROBABILITY_CHANGE
       end
     end
   end
