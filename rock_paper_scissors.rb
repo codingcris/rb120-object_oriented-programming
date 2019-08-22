@@ -1,5 +1,7 @@
 require 'pry'
+MAX_WINS = 10
 PROBABILITY_CHANGE = 5
+
 class Player
   attr_accessor :move, :name, :score
   attr_reader :move_history
@@ -16,50 +18,46 @@ class Player
   end
 
   def winner?
-    self.score == 10
-  end
-
-  def display_move_history
-    puts "#{name} move history:"
-    move_history.each { |el| puts "\t#{el}" }
+    self.score == MAX_WINS
   end
 end
 
 class Human < Player
-  def set_name
-    loop do
-      puts "What is your name?"
-      self.name = gets.chomp
-      break unless name.empty?
-      puts "Sorry you must enter a value."
-    end
-  end
+  VALID_CHOICES = %w(rock paper scissors lizard spock r p s l sp)
 
   def choose
     choice = nil
     loop do
-      puts "Please choose rock, paper, scissors, lizard, or spock:"
+      puts "Please choose rock(R), paper(P), scissors(S), lizard(L), or spock(SP):"
       choice = gets.chomp.downcase
-      break if ['rock', 'paper', 'scissors', 'lizard', 'spock'].include?(choice)
+      break if VALID_CHOICES.include?(choice)
       puts "Sorry invalid choice."
     end
+    choice = case choice
+             when 'r' then 'rock'
+             when 'p' then 'paper'
+             when 's' then 'scissors'
+             when 'l' then 'lizard'
+             when 'sp' then 'spock'
+             else choice
+             end
     self.move = Move.new(choice)
     move_history << move
+  end
+
+  private
+
+  def set_name
+    loop do
+      puts "What is your name?"
+      self.name = gets.chomp
+      break unless name.strip.empty?
+      puts "Sorry you must enter a value."
+    end
   end
 end
 
 class Computer < Player
-  attr_accessor :move_result, :move_probabilities
-
-  def initialize
-    super
-    probability_by_personality
-  end
-
-  def set_name
-    self.name = ['R2D2', 'Hal', 'Chappie', 'Sonny', 'Number 5'].sample
-  end
-
   # R2D2 is just happy to be playing. His first move is random
   # Hal was meant to serve humans, even half humans. Hal always begins by
   # picking spock.
@@ -67,24 +65,22 @@ class Computer < Player
   # Sonny wants to prove his humanity by writing a symphony. He always begins
   # by picking paper. Now if he could only get a pencil...
   # Number 5 wants to try everything. First move is completely random.
-  def probability_by_personality
-    self.move_probabilities = case name
-                              when 'R2D2'
-                                { 'rock' => 20, 'paper' => 20, 'scissors' => 20,
-                                  'lizard' => 20, 'spock' => 20 }
-                              when 'Hal'
-                                { 'rock' => 0, 'paper' => 0, 'scissors' => 0,
-                                  'lizard' => 0, 'spock' => 100 }
-                              when 'Chappie'
-                                { 'rock' => 0, 'paper' => 0, 'scissors' => 100,
-                                  'lizard' => 0, 'spock' => 0 }
-                              when 'Sonny'
-                                { 'rock' => 0, 'paper' => 100, 'scissors' => 0,
-                                  'lizard' => 0, 'spock' => 0 }
-                              when 'Number 5'
-                                { 'rock' => 20, 'paper' => 20, 'scissors' => 20,
-                                  'lizard' => 20, 'spock' => 20 }
-                              end
+  START_PERSONALITIES = { R2D2: { 'rock' => 20, 'paper' => 20, 'scissors' => 20,
+                                  'lizard' => 20, 'spock' => 20 },
+                          Hal: { 'rock' => 0, 'paper' => 0, 'scissors' => 0,
+                                 'lizard' => 0, 'spock' => 100 },
+                          Chappie: { 'rock' => 0, 'paper' => 0, 'spock' => 0,
+                                     'scissors' => 100, 'lizard' => 0 },
+                          Sonny: { 'rock' => 0, 'paper' => 100, 'scissors' => 0,
+                                   'lizard' => 0, 'spock' => 0 },
+                          Number5: { 'rock' => 20, 'paper' => 20, 'spock' => 20,
+                                     'scissors' => 20, 'lizard' => 20 } }
+
+  attr_accessor :move_result, :move_probabilities
+
+  def initialize
+    super
+    @move_probabilities = START_PERSONALITIES[name.to_sym]
   end
 
   def choose
@@ -102,9 +98,14 @@ class Computer < Player
     move_history << move.to_s
   end
 
+  private
+
+  def set_name
+    self.name = ['R2D2', 'Hal', 'Chappie', 'Sonny', 'Number5'].sample
+  end
+
   # returns an array of ranges based on the probability of each move in
-  # @move_probabilities so that a random number will fall into one of
-  # these ranges and indicate the computer's move.
+  # @move_probabilities
   def probability_ranges
     start_of_range = 0
     probability_ranges = {}
@@ -124,12 +125,10 @@ class Computer < Player
     when :loss
       decrease_probability(last_move)
     end
-    p move_probabilities
   end
 
   # called if a move results in a win, will increase the probability of that
   # move being chosen by the computer again
-
   def increase_probability(winning_move)
     move_probabilities.each do |move_choice, move_probability|
       if move_choice != winning_move && move_probability >= PROBABILITY_CHANGE
@@ -141,11 +140,10 @@ class Computer < Player
 
   # called if a move results in a loss, will decrease the probability of that
   # move being chosen by the computer again
-
   def decrease_probability(losing_move)
     move_probabilities.each do |move_choice, move_probability|
       break if move_probabilities[losing_move] == 0
-      if move_choice != losing_move && move_probability <= 95
+      if move_choice != losing_move && move_probability <= 100 - PROBABILITY_CHANGE
         move_probabilities[losing_move] -= PROBABILITY_CHANGE
         move_probabilities[move_choice] += PROBABILITY_CHANGE
       end
@@ -160,6 +158,25 @@ class RPSGame
     @human = Human.new
     @computer = Computer.new
   end
+
+  def play
+    display_welcome_message
+    loop do
+      while !human.winner? && !computer.winner?
+        display_score
+        players_choose_moves
+        display_moves
+        display_winner
+        update_score
+      end
+      display_score
+      display_grand_winner
+      break unless play_again?
+    end
+    display_goodbye_message
+  end
+
+  private
 
   def display_welcome_message
     puts "Welcome to Rock, Paper, Scissors!"
@@ -212,7 +229,7 @@ class RPSGame
     system(Gem.win_platform? ? "cls" : "clear")
     score = <<~SCORE
       ---------------------------------------
-      First to 10 wins it all!
+      First to #{MAX_WINS} wins it all!
       Current Score:
       \t#{human.name} : #{human.score}
       \t#{computer.name} : #{computer.score}
@@ -238,23 +255,6 @@ class RPSGame
   def players_choose_moves
     human.choose
     computer.choose
-  end
-
-  def play
-    display_welcome_message
-    loop do
-      while !human.winner? && !computer.winner?
-        display_score
-        players_choose_moves
-        display_moves
-        display_winner
-        update_score
-      end
-      display_score
-      display_grand_winner
-      break unless play_again?
-    end
-    display_goodbye_message
   end
 end
 
@@ -282,6 +282,5 @@ class Move
     value.to_s
   end
 end
-
 game = RPSGame.new
 game.play
