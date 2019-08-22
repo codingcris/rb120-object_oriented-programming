@@ -1,6 +1,4 @@
 MAX_WINS = 10
-PROBABILITY_CHANGE = 5
-
 class Player
   attr_accessor :move, :name, :score
   attr_reader :move_history
@@ -57,6 +55,8 @@ class Human < Player
 end
 
 class Computer < Player
+  PROBABILITY_CHANGE = 5
+
   # R2D2 is just happy to be playing. His first move is random
   # Hal was meant to serve humans, even half humans. Hal always begins by
   # picking spock.
