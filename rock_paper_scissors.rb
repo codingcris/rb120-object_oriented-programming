@@ -1,4 +1,3 @@
-require 'pry'
 MAX_WINS = 10
 PROBABILITY_CHANGE = 5
 
