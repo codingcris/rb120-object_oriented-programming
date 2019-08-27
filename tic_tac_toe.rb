@@ -316,9 +316,8 @@ class TTTGame
 
   def human_moves
     loop do
-      puts "Choose a square from: #{join_or(board.unmarked_keys)}"
-      choice = human.choose_move.to_i
-      if board.unmarked_keys.include?(choice)
+      choice = human.choose_move("Choose a square from: #{join_or(board.unmarked_keys)}")
+      if board.unmarked_keys.include?(choice.to_i)
         board[choice.to_i] = human.marker
         break
       end
