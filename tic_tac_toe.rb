@@ -201,11 +201,6 @@ class TTTGame
   MAX_WINS = 5
   COIN = ['heads', 'tails']
 
-  private
-
-  attr_reader :board, :human, :computer
-  attr_accessor :current_marker, :first_move
-
   def initialize
     @board = Board.new
     @human = Human.new
@@ -214,9 +209,36 @@ class TTTGame
     @current_marker = first_move.marker
   end
 
+  def play
+    clear
+    display_welcome_message
+
+    loop do
+      display_board
+      loop do
+        current_player_moves
+        break if board.full? || board.someone_won?
+        clear_screen_and_display_board
+      end
+
+      display_result
+      if grand_winner?
+        play_again? ? reset_first_to_move : break
+      end
+      reset
+    end
+
+    display_goodbye_message
+  end
+
   def clear
     system(CLEAR_SCREEN)
   end
+
+  private
+
+  attr_reader :board, :human, :computer
+  attr_accessor :current_marker, :first_move
 
   def first_to_move
     choice = coin_toss_choice
@@ -329,8 +351,8 @@ class TTTGame
     clear_screen_and_display_board
     winning_marker = board.winning_marker
     puts case winning_marker
-         when human.marker then "You won!"
-         when computer.marker then "Computer won!"
+         when human.marker then "#{human.marker} wins!"
+         when computer.marker then "#{computer.marker} wins!"
          else "Board is full. It's a tie!"
          end
     sleep(3)
@@ -384,30 +406,6 @@ class TTTGame
 
   def reset_first_to_move
     self.first_move = first_to_move
-  end
-
-  public
-
-  def play
-    clear
-    display_welcome_message
-
-    loop do
-      display_board
-      loop do
-        current_player_moves
-        break if board.full? || board.someone_won?
-        clear_screen_and_display_board
-      end
-
-      display_result
-      if grand_winner?
-        play_again? ? reset_first_to_move : break
-      end
-      reset
-    end
-
-    display_goodbye_message
   end
 end
 
