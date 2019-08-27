@@ -189,8 +189,8 @@ class Human < Player
     puts "TO BE: #{SUGGESTED_MARKERS.join('  | ')}"
   end
 
-  def choose_move(game_message = nil)
-    puts game_message if game_message
+  def choose_move(game_message = 'Choose a move:')
+    puts game_message
     choice = gets.chomp
     return choice unless choice.strip.empty?
   end
