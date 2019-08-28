@@ -171,6 +171,7 @@ class Human < Player
   end
 
   def set_marker
+    puts
     loop do
       puts "Choose any one character as your marker."
       show_suggested_markers
@@ -204,6 +205,8 @@ class TTTGame
   COIN = ['heads', 'tails']
 
   def initialize
+    clear
+    display_welcome_message
     @board = Board.new
     @human = Human.new
     @computer = Computer.new
@@ -213,7 +216,6 @@ class TTTGame
 
   def play
     clear
-    display_welcome_message
 
     loop do
       display_board
@@ -259,6 +261,7 @@ class TTTGame
   end
 
   def coin_toss_choice
+    puts
     puts "Coin toss will determine who goes first."
     choice = ''
     loop do
