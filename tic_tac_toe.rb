@@ -63,6 +63,10 @@ class Board
     (1..9).each { |key| squares[key] = Square.new }
   end
 
+  def winning_lines
+    WINNING_LINES
+  end
+
   private
 
   attr_reader :squares
@@ -118,32 +122,28 @@ class Computer < Player
     @marker = %w(⁂ ✚ ♞ ✔ ✪ ♬).sample
   end
 
-  def best_move(guidelines)
-    open_moves = guidelines[:open_moves]
-    winning_moves = guidelines[:winning_moves]
+  def best_move(board, human_marker, computer_marker)
+    open_moves = board.unmarked_keys
+    return Board::CENTER_SQUARE if open_moves.include?(Board::CENTER_SQUARE)
 
-    guidelines[:priority_moves].each do |move|
-      return move if open_moves.include?(move)
-    end
-
-    offensive_move = find_definite_win(guidelines[:computer_moves],
+    winning_moves = Board::WINNING_LINES
+    offensive_move = find_definite_win(board.marked_keys(computer_marker),
                                        winning_moves, open_moves)
-    return offensive_move if offensive_move
-
-    defensive_move = find_definite_win(guidelines[:opponent_moves],
+    defensive_move = find_definite_win(board.marked_keys(human_marker),
                                        winning_moves, open_moves)
-    return defensive_move if defensive_move
 
-    open_moves.sample
+    offensive_move || defensive_move || open_moves.sample
   end
+
+  private
 
   def find_definite_win(player_moves, winning_moves, open_moves)
     winning_moves.each do |win|
       moves_for_win = win.reject { |move| player_moves.include?(move) }
       if moves_for_win.size == 1 && open_moves.include?(moves_for_win.first)
         definite_win = moves_for_win.first
+        return definite_win
       end
-      return definite_win if definite_win
     end
     nil
   end
@@ -152,6 +152,14 @@ end
 class Human < Player
   SUGGESTED_MARKERS = %w(❋ ✖ ❿ ☯ ✯ ✈ ❉)
   SUGGESTED_MARKER_CODES = %w(1! 2! 3! 4! 5! 6! 7!)
+
+  def choose_move(game_message = 'Choose a move:')
+    puts game_message
+    choice = gets.chomp
+    return choice unless choice.strip.empty?
+  end
+
+  private
 
   def set_name
     loop do
@@ -188,12 +196,6 @@ class Human < Player
     puts "--------------------------------------------"
     puts "TO BE: #{SUGGESTED_MARKERS.join('  | ')}"
   end
-
-  def choose_move(game_message = 'Choose a move:')
-    puts game_message
-    choice = gets.chomp
-    return choice unless choice.strip.empty?
-  end
 end
 
 class TTTGame
@@ -215,30 +217,36 @@ class TTTGame
 
     loop do
       display_board
-      loop do
-        current_player_moves
-        break if board.full? || board.someone_won?
-        clear_screen_and_display_board
-      end
+
+      play_round
 
       display_result
       if grand_winner?
         play_again? ? reset_first_to_move : break
       end
+
       reset
     end
 
     display_goodbye_message
   end
 
-  def clear
-    system(CLEAR_SCREEN)
+  def play_round
+    loop do
+      current_player_moves
+      break if board.full? || board.someone_won?
+      clear_screen_and_display_board
+    end
   end
 
   private
 
   attr_reader :board, :human, :computer
   attr_accessor :current_marker, :first_move
+
+  def clear
+    system(CLEAR_SCREEN)
+  end
 
   def first_to_move
     choice = coin_toss_choice
@@ -316,7 +324,8 @@ class TTTGame
 
   def human_moves
     loop do
-      choice = human.choose_move("Choose a square from: #{join_or(board.unmarked_keys)}")
+      prompt = "Choose a square from: #{join_or(board.unmarked_keys)}"
+      choice = human.choose_move(prompt)
       if board.unmarked_keys.include?(choice.to_i)
         board[choice.to_i] = human.marker
         break
@@ -326,16 +335,7 @@ class TTTGame
   end
 
   def computer_moves
-    human_squares = board.marked_keys(human.marker)
-    computer_squares = board.marked_keys(computer.marker)
-
-    best_move_guidelines = { priority_moves: [Board::CENTER_SQUARE],
-                             winning_moves: Board::WINNING_LINES,
-                             open_moves: board.unmarked_keys,
-                             computer_moves: computer_squares,
-                             opponent_moves: human_squares }
-
-    best_move = computer.best_move(best_move_guidelines)
+    best_move = computer.best_move(board, human.marker, computer.marker)
     board[best_move] = computer.marker
   end
 
