@@ -296,10 +296,7 @@ class TwentyOneGame
   end
 
   def busted?
-    case current_participant
-    when player then player.hand_value > TARGET_TOTAL
-    when dealer then dealer.hand_value > TARGET_TOTAL
-    end
+    current_participant.hand_value > TARGET_TOTAL
   end
 
   def someone_won?
@@ -327,9 +324,10 @@ class TwentyOneGame
   end
 
   def bust_win
-    win[:winner] = [player, dealer].reject do |participant|
-                     participant == current_participant
-                   end.first
+    win[:winner] = case current_participant
+                   when player then dealer
+                   when dealer then player
+                   end
     win[:win_type] = :bust
   end
 
@@ -342,11 +340,11 @@ class TwentyOneGame
     case player.hand_value <=> dealer.hand_value
     when 1
       win[:winner] = player
-      win[:win_type] = :total
     when -1
       win[:winner] = dealer
-      win[:win_type] = :total
     end
+
+    win[:win_type] = :total
   end
 
   def display_winner
@@ -361,6 +359,7 @@ class TwentyOneGame
 
   def display_grand_champion
     sleep(2)
+
     grand_champ_msg = <<~MSG
       #{win[:winner].name} has reached #{MAX_WINS} wins!
       #{win[:winner].name} is grand champion!
@@ -373,8 +372,7 @@ class TwentyOneGame
   def play_again?
     choice = nil
     loop do
-      puts
-      puts "Would you like to play again? (Y/N)"
+      puts "\nWould you like to play again? (Y/N)"
       choice = gets.chomp.upcase
       break if ['Y', 'N'].include?(choice)
       puts "Sorry you must enter Y for yes or N for no"
